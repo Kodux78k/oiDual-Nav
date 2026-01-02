@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Dual.Navigator — Minimal (sem Editor)</title>
+<link rel="icon" href="assets/icons/icon-192.png" type="image/png"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<style>
+  :root{
+    --bg:#000;
+    --accent:#00ffff;
+    --glass:rgba(255,255,255,0.03);
+    --muted:rgba(255,255,255,0.08);
+  }
+
+  /* Theme overrides via body classes */
+  body.light {
+    --bg: linear-gradient(180deg,#f6f7f9,#e6e7ea);
+    --accent: #0066cc;
+    --glass: rgba(0,0,0,0.03);
+    --muted: rgba(0,0,0,0.06);
+    color: #111;
+  }
+  body.medium {
+    --bg: linear-gradient(180deg,#222,#333);
+    --accent: #ffd166;
+    --glass: rgba(255,255,255,0.02);
+    --muted: rgba(255,255,255,0.06);
+    color: #eaeaea;
+  }
+  body.vibe {
+    --bg: linear-gradient(135deg,#1b1b2f,#3a0f47);
+    --accent: #ff00ff;
+    --glass: rgba(255,255,255,0.03);
+    --muted: rgba(255,255,255,0.06);
+    color: #f5eaff;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--accent);font-family:Inter,Montserrat,system-ui;overflow:hidden}
+  /* iframe full */
+  iframe#frame{position:fixed;inset:0;width:100%;height:100%;border:0;background:#000;z-index:1;transition:opacity .28s ease}
+  iframe#frame.hidden{opacity:0}
+  /* symbol bar (right) improved spacing and icon size */
+  .symbol-bar{
+    position:fixed;right:16px;top:44%;transform:translateY(-44%);
+    display:flex;flex-direction:column;gap:22px;z-index:60;
+  }
+  .symbol-button{
+    width:28px;height:28px;border-radius:12px;background:var(--glass);
+    border:1px solid var(--muted);color:var(--accent);display:flex;
+    align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px);
+    transition:transform .16s ease, box-shadow .16s ease;
+    font-size:18px;
+  }
+  .symbol-button:hover{ transform:translateX(-6px) scale(1.04); box-shadow:0 12px 30px rgba(0,255,255,0.06); }
+  /* left tools */
+  .tool-btn{ position:fixed; left:16px; z-index:70; width:28px; height:28px; border-radius:12px; background:var(--glass); border:1px solid var(--muted); color:var(--accent); display:flex; align-items:center; justify-content:center; cursor:pointer }
+
+  #uploadBtn{ bottom:480px } #remoteBtn{ bottom:424px } #decoderToggle{ bottom:368px } #ritualBtn{ bottom:312px; color:#ff00ff; border-color:rgba(255,0,255,0.2) }
+
+  /* theme toggle positioning */
+  #themeToggle { position: absolute;
+      top: 40px;
+      left: 50%; z-index:10000;
+      transform: translateX(-50%); background:var(--glass); border:1px solid var(--muted); color:var(--accent); width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px }
+
+  /* footer dots (3 modes) */
+  .footer-dots { position:fixed; bottom:39px; left:50%; opacity:0.6; transform:translateX(-50%); display:flex; gap:14px; z-index:120; }
+  .dot { border-radius:50%; border:1px solid rgba(0,255,255,.25); background:rgba(255,255,255,.03); width:14px; height:14px; cursor:pointer; transition:transform .18s ease, background .18s ease }
+  .dot.small{ width:10px; height:10px; opacity:.85 }
+  .dot.main{ width:18px; height:18px; box-shadow:0 6px 20px rgba(0,255,255,0.06) }
+  .dot:hover{ transform:scale(1.4); background:rgba(0,255,255,.25) }
+  /* toast */
+  #toast{ position:fixed; left:50%; top:56px; transform:translateX(-50%); padding:8px 12px; border-radius:8px; background:rgba(0,0,0,0.6); color:var(--accent); font-family:monospace; z-index:200; display:none }
+  @media(max-width:600px){ .symbol-bar{right:8px;top:38%} .dot.main{width:16px;height:16px} }
+</style>
+</head>
+<body>
+
+<iframe id="frame" src="index.html" title="Dual.Navigator frame"></iframe>
+
+<!-- right symbol bar -->
+<div class="symbol-bar" aria-hidden>
+  <button class="symbol-button" data-url="about:blank" title="Blank">Φ</button>
+  <button class="symbol-button" data-url="https://kodux78k.github.io/oiDual-Vivivi-1/" title="Vivivi">꩜</button>
+  <button class="symbol-button" data-url="https://kodux78k.github.io/oiDual-KxT/" title="KxT">◌</button>
+  <button class="symbol-button" data-url="https://kodux78k.github.io/Unouno-/index.html" title="UnoUno">☼</button>
+  <button class="symbol-button" data-url="https://kodux78k.github.io/NoSolarDual/index.html" title="NoSolar">◑</button>
+  <button class="symbol-button" data-url="https://kodux78k.github.io/info-Doc/index.html" title="InfoDoc">◘</button>
+</div>
+
+<!-- left tools -->
+<button id="uploadBtn" class="tool-btn" title="Upload .html"><i class="fa-solid fa-file-import"></i></button>
+<input id="uploadHTML" type="file" accept=".html" style="display:none">
+<button id="remoteBtn" class="tool-btn" title="Abrir URL remota"><i class="fa-solid fa-globe"></i></button>
+<button id="decoderToggle" class="tool-btn" title="Decoder"><i class="fa-solid fa-key"></i></button>
+<button id="ritualBtn" class="tool-btn" title="Ritual Visual"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+
+<!-- THEME TOGGLE -->
+<button id="themeToggle" title="Alternar tema"><i class="fa-solid fa-adjust"></i></button>
+
+<!-- footer 3-dots: indexer | base ritual | last page -->
+<div class="footer-dots" aria-hidden>
+  <div id="dot-index" class="dot small" title="Indexer (carrega index.html)"></div>
+  <div id="dot-base" class="dot main" title="Base Ritual (reset sem trocar src)"></div>
+  <div id="dot-last" class="dot small" title="Última página (last page)"></div>
+</div>
+
+<!-- toast -->
+<div id="toast" aria-live="polite" role="status"></div>
+
+<script>
+(function(){
+  const frame = document.getElementById('frame');
+  const toast = document.getElementById('toast');
+  const STORAGE_KEY = 'dual_last';
+  const THEME_KEY = 'dual_theme';
+  const THEMES = ['dark','light','medium','vibe'];
+
+  function showToast(msg, ms=900){
+    toast.textContent = msg; toast.style.display='block';
+    clearTimeout(showToast._t); showToast._t = setTimeout(()=> toast.style.display='none', ms);
+  }
+
+  // safe setter for frame src (encode local filenames)
+  function setFrameSrc(url, persist=true){
+    if(!url) return;
+    const final = (/^[a-zA-Z]+:\/\//.test(url)) ? url : encodeURI(url);
+    frame.classList.add('hidden');
+    setTimeout(()=> {
+      frame.src = final;
+      frame.onload = ()=> frame.classList.remove('hidden');
+    }, 220);
+    if(persist){
+      try { localStorage.setItem(STORAGE_KEY, final); } catch(e){}
+    }
+    showToast('Carregado → ' + (final.length>48 ? final.slice(0,44)+'…' : final));
+  }
+
+  // wire symbol buttons
+  document.querySelectorAll('.symbol-button').forEach(btn=>{
+    const url = btn.dataset.url;
+    if(!url) return;
+    btn.addEventListener('click', ()=> setFrameSrc(url, true));
+    btn.addEventListener('contextmenu', e => { e.preventDefault(); window.open(url, '_blank'); });
+  });
+
+  // upload local html
+  const uploadInput = document.getElementById('uploadHTML');
+  document.getElementById('uploadBtn').addEventListener('click', ()=> uploadInput.click());
+  uploadInput.addEventListener('change', e=>{
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    if(!f.name.endsWith('.html')) return alert('Selecione um arquivo .html');
+    const r = new FileReader();
+    r.onload = ev=>{
+      const blob = new Blob([ev.target.result], {type:'text/html'});
+      const url = URL.createObjectURL(blob);
+      setFrameSrc(url, true);
+    };
+    r.readAsText(f);
+  });
+
+  // remote url opener
+  document.getElementById('remoteBtn').addEventListener('click', ()=>{
+    const url = prompt('Cole a URL do componente remoto:');
+    if(url) setFrameSrc(url, false);
+  });
+
+  // ritual button (visual log)
+  document.getElementById('ritualBtn').addEventListener('click', ()=> showToast('Ritual visual ativado', 700));
+
+  // footer dots behaviors
+  // Left: Indexer (force index.html) — deliberate navigation (may create index-in-index effect if index is the same app)
+  document.getElementById('dot-index').addEventListener('click', ()=>{
+    showToast('Indexer → index.html');
+    // explicit navigation
+    setFrameSrc('index.html', true);
+  });
+
+  // Center: Base Ritual (reset state without changing src)
+  document.getElementById('dot-base').addEventListener('click', ()=>{
+    showToast('Base Ritual (reset sem trocar src)', 800);
+    // send message to iframe to allow it to handle internal reset (if it listens)
+    try {
+      frame.contentWindow.postMessage({type:'DUAL_RESET_STATE'}, '*');
+    } catch(e){}
+    // visual "flash" to mimic open ritual without changing src
+    frame.classList.add('hidden');
+    setTimeout(()=> frame.classList.remove('hidden'), 160);
+  });
+
+  // Right: Last page (load last persisted)
+  document.getElementById('dot-last').addEventListener('click', ()=>{
+    const last = (function(){ try { return localStorage.getItem(STORAGE_KEY); } catch(e){ return null; } })();
+    if(last){
+      setFrameSrc(last, true);
+    } else {
+      showToast('Nenhuma última página salva', 900);
+    }
+  });
+
+  // store last visited page on iframe load (best-effort)
+  frame.addEventListener('load', ()=>{
+    try {
+      // try same-origin href, else fallback to frame.src
+      const href = frame.contentWindow && frame.contentWindow.location && frame.contentWindow.location.href;
+      if(href && href.indexOf(location.origin) === 0){
+        localStorage.setItem(STORAGE_KEY, href);
+      } else {
+        localStorage.setItem(STORAGE_KEY, frame.src);
+      }
+    } catch(e){
+      try { localStorage.setItem(STORAGE_KEY, frame.src); } catch(_) {}
+    }
+  });
+
+  // decoder toggle (kept minimal)
+  const decoderToggle = document.getElementById('decoderToggle');
+  decoderToggle.addEventListener('click', ()=> showToast('Decoder toggle (off-screen)',700));
+
+  // ----------------- THEME HANDLER -----------------
+  const themeToggleBtn = document.getElementById('themeToggle');
+
+  function applyTheme(theme){
+    // remove all theme classes
+    document.body.classList.remove('light','medium','vibe');
+    if(theme && theme !== 'dark'){
+      document.body.classList.add(theme);
+    }
+    // store
+    try { localStorage.setItem(THEME_KEY, theme); } catch(e){}
+    showToast('Tema → ' + theme);
+    // update button icon (optional): make adjust icon highlight
+    themeToggleBtn.setAttribute('title', 'Tema: ' + theme + ' (tecla T alterna)');
+  }
+
+  function currentTheme(){
+    return localStorage.getItem(THEME_KEY) || 'dark';
+  }
+
+  function toggleTheme(){
+    const cur = currentTheme();
+    const idx = THEMES.indexOf(cur);
+    const next = THEMES[(idx + 1) % THEMES.length];
+    applyTheme(next);
+  }
+
+  // initialize theme on load
+  (function initTheme(){
+    const saved = currentTheme();
+    applyTheme(saved);
+    themeToggleBtn.addEventListener('click', toggleTheme);
+    // key shortcut: t
+    document.addEventListener('keydown', (ev)=>{
+      if(ev.key.toLowerCase() === 't' && !ev.metaKey && !ev.ctrlKey && !ev.altKey){
+        ev.preventDefault();
+        toggleTheme();
+      }
+    });
+  })();
+  // ----------------- END THEME HANDLER -----------------
+
+})();
+</script>
+</body>
+</html>

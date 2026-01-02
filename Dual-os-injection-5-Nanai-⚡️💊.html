@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Dual.Navigator — Theme Enabled</title>
+<link rel="icon" href="assets/icons/icon-192.png" type="image/png"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<style>
+    /* ——— VARIÁVEIS DE TEMA (CSS INTEGRAL) ——— */
+    :root {
+      /* Tema Padrão (Dark) */
+      --bg: linear-gradient(to bottom, #000, #1a1a1a);
+      --text: #d7d7d7;
+      --panel-bg: rgba(0,0,0,0.3);
+      --glass: rgba(255,255,255,0.05); /* Adicionei para usar nos botões */
+      --muted: rgba(255,255,255,0.2);  /* Adicionei para as bordas */
+      --accent: #00ffff;
+      --fast: .4s; --med: .8s; --slow: 1.8s;
+    }
+
+    /* Variações de Tema */
+    body.light { 
+        --bg: linear-gradient(to bottom, #e0e0e0, #f5f5f5); 
+        --text: #333; 
+        --panel-bg: rgba(255,255,255,0.6);
+        --glass: rgba(0,0,0,0.05);
+        --muted: rgba(0,0,0,0.2);
+        --accent: #008888;
+    }
+    body.medium { 
+        --bg: linear-gradient(to bottom, #333, #555); 
+        --text: #eee; 
+        --panel-bg: rgba(0,0,0,0.5);
+        --glass: rgba(255,255,255,0.1);
+        --muted: rgba(255,255,255,0.2);
+        --accent: #00ffcc;
+    }
+    body.vibe { 
+        --bg: linear-gradient(135deg, #2b002b, #001a1a); 
+        --text: #fff; 
+        --panel-bg: rgba(255,255,255,0.1);
+        --glass: rgba(255,255,255,0.05);
+        --muted: rgba(255,0,255,0.3);
+        --accent: #ff00ff;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:100%;height:100%;overflow:hidden}
+    
+    body{
+      display:flex;flex-direction:column;align-items:center;
+      padding:0px;background:var(--bg);color:var(--text);
+      font-family:'Montserrat',sans-serif;
+      transition:background var(--slow),color var(--slow);
+      animation:fadeIn var(--slow) ease forwards;
+    }
+
+    @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ——— BOTÃO THEME TOGGLE ——— */
+    #themeToggle {
+      position: absolute;
+      top: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--text);
+      border-radius: 50%;
+      background: var(--glass);
+      color: var(--text);
+      cursor: pointer;
+      transition: all var(--med);
+      z-index: 10001; /* Z-index alto para ficar acima de tudo */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 0 10px rgba(0,255,255,0.1);
+    }
+    #themeToggle:hover {
+        background: var(--glass);
+        color: var(--bg); /* Inverte a cor no hover para contraste */
+        box-shadow: 0 0 20px var(--accent);
+    }
+
+    /* iframe full */
+    iframe#frame{position:fixed;inset:0;width:100%;height:100%;border:0;background:#000;z-index:1;transition:opacity .28s ease}
+    iframe#frame.hidden{opacity:0}
+    
+    /* symbol bar (right) */
+    .symbol-bar{
+        position:fixed;right:16px;top:44%;transform:translateY(-44%);
+        display:flex;flex-direction:column;gap:22px;z-index:60;
+    }
+    .symbol-button{
+        width:28px;height:28px;border-radius:12px;background:var(--glass);
+        border:1px solid var(--muted);color:var(--accent);display:flex;
+        align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px);
+        transition:transform .16s ease, box-shadow .16s ease;
+        font-size:18px;
+    }
+    .symbol-button:hover{ transform:translateX(-6px) scale(1.04); box-shadow:0 12px 30px rgba(0,255,255,0.06); }
+    
+    /* left tools */
+    .tool-btn{ position:fixed; left:16px; z-index:70; width:28px; height:28px; border-radius:12px; background:var(--glass); border:1px solid var(--muted); color:var(--accent); display:flex; align-items:center; justify-content:center; cursor:pointer }
+
+    #uploadBtn{ bottom:480px } #remoteBtn{ bottom:424px } #decoderToggle{ bottom:368px } #ritualBtn{ bottom:312px; color:var(--accent); border-color:var(--muted) }
+
+    /* footer dots */
+    .footer-dots { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); display:flex; gap:14px; z-index:120; }
+    .dot { border-radius:50%; border:1px solid var(--accent); background:rgba(255,255,255,.03); width:14px; height:14px; cursor:pointer; transition:transform .18s ease, background .18s ease }
+    .dot.small{ width:10px; height:10px; opacity:.85 }
+    .dot.main{ width:18px; height:18px; box-shadow:0 6px 20px rgba(0,255,255,0.06) }
+    .dot:hover{ transform:scale(1.4); background:var(--accent) }
+    
+    /* toast */
+    #toast{ position:fixed; left:50%; top:12px; transform:translateX(-50%); padding:8px 12px; border-radius:8px; background:rgba(0,0,0,0.6); color:var(--accent); font-family:monospace; z-index:200; display:none }
+    
+    @media(max-width:600px){ .symbol-bar{right:8px;top:38%} .dot.main{width:16px;height:16px} }
+</style>
+</head>
+<body>
+
+<iframe id="frame" src="index.html" title="Dual.Navigator frame"></iframe>
+
+<button id="themeToggle" title="Alternar tema: Dark / Light / Medium / Vibe">
+    <i class="fa-solid fa-circle-half-stroke"></i>
+</button>
+
+<div class="symbol-bar" aria-hidden>
+  <button class="symbol-button" data-url="about:blank" title="Blank">Φ</button>
+  <button class="symbol-button" data-url="https://kodux78k.github.io/oiDual-Vivivi-1/" title="Vivivi">꩜</button>
+  <button class="symbol-button" data-url="https://kodux78k.github.io/oiDual-KxT/" title="KxT">◌</button>
+  <button class="symbol-button" data-url="https://kodux78k.github.io/Unouno-/index.html" title="UnoUno">☼</button>
+  <button class="symbol-button" data-url="https://kodux78k.github.io/NoSolarDual/index.html" title="NoSolar">◑</button>
+  <button class="symbol-button" data-url="https://kodux78k.github.io/info-Doc/index.html" title="InfoDoc">◘</button>
+</div>
+
+<button id="uploadBtn" class="tool-btn" title="Upload .html"><i class="fa-solid fa-file-import"></i></button>
+<input id="uploadHTML" type="file" accept=".html" style="display:none">
+<button id="remoteBtn" class="tool-btn" title="Abrir URL remota"><i class="fa-solid fa-globe"></i></button>
+<button id="decoderToggle" class="tool-btn" title="Decoder"><i class="fa-solid fa-key"></i></button>
+<button id="ritualBtn" class="tool-btn" title="Ritual Visual"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+
+<div class="footer-dots" aria-hidden>
+  <div id="dot-index" class="dot small" title="Indexer (carrega index.html)"></div>
+  <div id="dot-base" class="dot main" title="Base Ritual (reset sem trocar src)"></div>
+  <div id="dot-last" class="dot small" title="Última página (last page)"></div>
+</div>
+
+<div id="toast" aria-live="polite" role="status"></div>
+
+<script>
+(function(){
+    const THEME_KEY = 'infodoseTheme';
+    
+    function applyTheme(theme) {
+        document.body.classList.remove('light', 'medium', 'vibe');
+        if (theme !== 'dark') {
+            document.body.classList.add(theme);
+        }
+        
+        const btn = document.getElementById('themeToggle');
+        if(btn) {
+            btn.title = `Tema atual: ${theme.toUpperCase()}`;
+            // Animação de clique
+            btn.style.transform = "translateX(-50%) scale(0.9)";
+            setTimeout(() => btn.style.transform = "translateX(-50%) scale(1)", 200);
+        }
+    }
+
+    function toggleTheme() {
+        const order = ['dark', 'light', 'medium', 'vibe'];
+        // Pega tema atual do localStorage ou assume 'dark'
+        const cur = localStorage.getItem(THEME_KEY) || 'dark';
+        const nextIndex = (order.indexOf(cur) + 1) % order.length;
+        const next = order[nextIndex];
+        
+        applyTheme(next);
+        localStorage.setItem(THEME_KEY, next);
+    }
+
+    // Inicializa
+    const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+    applyTheme(savedTheme);
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+})();
+</script>
+
+<script>
+(function(){
+  const frame = document.getElementById('frame');
+  const toast = document.getElementById('toast');
+  const STORAGE_KEY = 'dual_last';
+
+  function showToast(msg, ms=900){
+    toast.textContent = msg; toast.style.display='block';
+    clearTimeout(showToast._t); showToast._t = setTimeout(()=> toast.style.display='none', ms);
+  }
+
+  function setFrameSrc(url, persist=true){
+    if(!url) return;
+    const final = (/^[a-zA-Z]+:\/\//.test(url)) ? url : encodeURI(url);
+    frame.classList.add('hidden');
+    setTimeout(()=> {
+      frame.src = final;
+      frame.onload = ()=> frame.classList.remove('hidden');
+    }, 220);
+    if(persist){
+      try { localStorage.setItem(STORAGE_KEY, final); } catch(e){}
+    }
+    showToast('Carregado → ' + (final.length>48 ? final.slice(0,44)+'…' : final));
+  }
+
+  // Botoes laterais
+  document.querySelectorAll('.symbol-button').forEach(btn=>{
+    const url = btn.dataset.url;
+    if(!url) return;
+    btn.addEventListener('click', ()=> setFrameSrc(url, true));
+    btn.addEventListener('contextmenu', e => { e.preventDefault(); window.open(url, '_blank'); });
+  });
+
+  // Upload local
+  const uploadInput = document.getElementById('uploadHTML');
+  document.getElementById('uploadBtn').addEventListener('click', ()=> uploadInput.click());
+  uploadInput.addEventListener('change', e=>{
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    if(!f.name.endsWith('.html')) return alert('Selecione um arquivo .html');
+    const r = new FileReader();
+    r.onload = ev=>{
+      const blob = new Blob([ev.target.result], {type:'text/html'});
+      const url = URL.createObjectURL(blob);
+      setFrameSrc(url, true);
+    };
+    r.readAsText(f);
+  });
+
+  document.getElementById('remoteBtn').addEventListener('click', ()=>{
+    const url = prompt('Cole a URL do componente remoto:');
+    if(url) setFrameSrc(url, false);
+  });
+
+  document.getElementById('ritualBtn').addEventListener('click', ()=> showToast('Ritual visual ativado', 700));
+
+  // Footer dots
+  document.getElementById('dot-index').addEventListener('click', ()=>{
+    showToast('Indexer → index.html');
+    setFrameSrc('index.html', true);
+  });
+
+  document.getElementById('dot-base').addEventListener('click', ()=>{
+    showToast('Base Ritual (reset)', 800);
+    try { frame.contentWindow.postMessage({type:'DUAL_RESET_STATE'}, '*'); } catch(e){}
+    frame.classList.add('hidden');
+    setTimeout(()=> frame.classList.remove('hidden'), 160);
+  });
+
+  document.getElementById('dot-last').addEventListener('click', ()=>{
+    const last = localStorage.getItem(STORAGE_KEY);
+    if(last){ setFrameSrc(last, true); } 
+    else { showToast('Nenhuma última página salva', 900); }
+  });
+
+  // Persistência ao carregar iframe
+  frame.addEventListener('load', ()=>{
+    try {
+      const href = frame.contentWindow && frame.contentWindow.location && frame.contentWindow.location.href;
+      if(href && href.indexOf(location.origin) === 0){
+        localStorage.setItem(STORAGE_KEY, href);
+      } else {
+        localStorage.setItem(STORAGE_KEY, frame.src);
+      }
+    } catch(e){
+      try { localStorage.setItem(STORAGE_KEY, frame.src); } catch(_) {}
+    }
+  });
+
+  // Decoder toggle
+  const decoderToggle = document.getElementById('decoderToggle');
+  decoderToggle.addEventListener('click', ()=> showToast('Decoder toggle (off-screen)',700));
+
+})();
+</script>
+</body>
+</html>
